@@ -22,3 +22,17 @@ Example:
 1. You can move & resize the window as you wish
 1. Adding any modifier to the spells command will use the regular spell output. This is useful for
    one-time lookups of the next spells, or spells in a certain level range.
+
+### Aliases/Commands
+
+Use `spw help` to see this list at any time in the game.
+
+```
+Spellbook window commands
+------
+spw enable                  - Enable spellbook
+spw disable                 - Disable spellbook
+spw hide <spell id>         - Hide spell from spellbook
+spw unhide <spell id>       - Unhide spell from spellbook
+spw hidden                  - List hidden spells
+```

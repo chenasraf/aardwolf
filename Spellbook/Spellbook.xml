@@ -16,11 +16,66 @@
    save_state="y"
    date_written="2024-10-08 00:56:30"
    requires="5.07"
-   version="1.1"
+   version="1.2"
    >
 </plugin>
 
 <!--  Triggers  -->
+
+<script>
+<![CDATA[
+string.lpad = function(str, len, char)
+  if char == nil then char = ' ' end
+  return string.rep(char, len - #str) .. str
+end
+
+string.rpad = function(str, len, char)
+  if char == nil then char = ' ' end
+  return str .. string.rep(char, len - #str)
+end
+
+utils.unserialize = function (s)
+  local f = load("return " .. s)
+  if f then
+    return f()
+  end
+end
+
+utils.serialize = function (t)
+  local s = "{"
+  for k, v in pairs(t) do
+    s = s .. '["' .. k .. '"]' .. " = " .. tostring(v) .. ", "
+  end
+  return s .. "}"
+end
+
+function CastSpell(_flags, hotspot_id)
+  local spid = tonumber(hotspot_id:match("spell_(%d+)"))
+  local sp = nil
+  for i, sp in ipairs(SpWinData) do
+    if sp.id == spid then
+      sp = sp
+      break
+    end
+  end
+  if sp then
+    Send("cast " .. sp.id)
+  end
+end
+
+SpWinData = {}
+SpWinIgnore = {}
+function OnPluginInstall()
+  local ignore = GetVariable("SpWinIgnore")
+  if ignore then
+    SpWinIgnore = utils.unserialize(ignore)
+    if not SpWinIgnore then
+      SpWinIgnore = {}
+    end
+  end
+end
+]]>
+</script>
 
 <triggers>
   <trigger
@@ -46,7 +101,7 @@
       local learned = "%3"
       local spn = "%4"
 
-      table.insert(spWinData, {
+      table.insert(SpWinData, {
         level = spWinLv,
         name = name,
         mana = mana,
@@ -70,7 +125,7 @@
       local learned = "%4"
       local spn = "%5"
 
-      table.insert(spWinData, {
+      table.insert(SpWinData, {
         level = spWinLv,
         name = name,
         mana = mana,
@@ -96,75 +151,33 @@
   >
     <send>
       require "themed_miniwindows"
-      string.lpad = function(str, len, char)
-        if char == nil then char = ' ' end
-        return string.rep(char, len - #str) .. str
-      end
-
-      string.rpad = function(str, len, char)
-        if char == nil then char = ' ' end
-        return str .. string.rep(char, len - #str)
-      end
-
-      function cast_sp(_flags, hotspot_id)
-        local spid = tonumber(hotspot_id:match("spell_(%d+)"))
-        local sp = nil
-        for i, sp in ipairs(spWinData) do
-          if sp.id == spid then
-            sp = sp
-            break
-          end
-        end
-        if sp then
-          Send("cast " .. sp.id)
-        end
-      end
 
       local lv = 0
-      for i, sp in ipairs(spWinData) do
+      for i, sp in ipairs(SpWinData) do
         local line = ""
-        if sp.level &gt; lv then
-          line = line .. "@W" .. string.rpad("lv " .. sp.level, 7)
-          lv = sp.level
-        else
-          line = line .. string.rpad("", 8)
+        if not SpWinIgnore[sp.id] then
+          if sp.level &gt; lv then
+            line = line .. "@W" .. string.rpad("lv " .. sp.level, 7)
+            lv = sp.level
+          else
+            line = line .. string.rpad("", 8)
+          end
+          line = line .. "@M[@G" .. string.lpad(sp.id, 3) .. "@M] "
+          line = line .. "@C" .. string.rpad(sp.name, 30)
+          line = line .. "@Y" .. string.lpad(sp.learned .. "%", 4)
+          -- spWin:add_text(line)
+          local tooltip = "Cast spell: " .. sp.name
+          spWin:add_text(
+            line,
+            true,
+            {
+              { label = tooltip, start = 1, stop = #line, text = "Send('cast " .. sp.id .. "')" }
+            }
+          )
         end
-        line = line .. "@M[@G" .. string.lpad(sp.id, 3) .. "@M] "
-        line = line .. "@C" .. string.rpad(sp.name, 30)
-        line = line .. "@Y" .. string.lpad(sp.learned .. "%", 4)
-        -- spWin:add_text(line)
-        local tooltip = "Cast spell: " .. sp.name
-        spWin:add_text(
-          line,
-          true,
-          {
-            { label = tooltip, start = 1, stop = #line, text = "Send('cast " .. sp.id .. "')" }
-          }
-        )
-        -- ColourNote("yellow", "", "Adding hotspot: spell_" .. sp.id)
-        -- WindowAddHotspot(
-        --     "spWin", "spell_" .. sp.id,
-        --     -- 0, i, 0, 30, -- pos
-        --     10, 10, 10, 10, -- pos
-        --     "cast_sp", -- mouseover
-        --     "cast_sp", -- cancelmouseover
-        --     "cast_sp", -- mousedown
-        --     "cast_sp", -- cancelmousedown
-        --     "cast_sp", -- mouseup
-        --     "Cast spell: " .. sp.name, -- tooltip
-        --     1, -- cursor: hand
-        --     0 -- flags
-        -- )
-        -- spWin:add_button(
-        --   "spell_" .. sp.id,
-        --   spWin.bodyleft + 10,
-        --   spWin.bodytop + 10 + (i - 1) * 30,
-        --   line, -- label
-        --   "cast_sp",
-        -- )
       end
 
-      ColourNote("yellow", "black", "Output captured to window.")
+      ColourNote("yellow", "", "Output captured to window.")
       EnableTriggerGroup("spellbook", false)
     </send>
   </trigger>
@@ -205,8 +218,69 @@
       spWin = ThemedTextWindow("spWin", 200, 200, 600, 500, "Spellbook", "center", true, true, true)
 
       EnableTriggerGroup("spellbook")
-      spWinData = {}
+      SpWinData = {}
       Send("spells%2")
+    </send>
+  </alias>
+  <alias
+   match="^spw (.+)?$"
+   enabled="y"
+   group="spellbook_config"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+    <send>
+        local args = utils.split("%1", " ")
+        local main = args[1]
+
+        if main == 'disable' or main == 'off' then
+          spWin:hide()
+          EnableAliasGroup("spellbook", false)
+          EnableTriggerGroup("spellbook", false)
+          ColourNote("yellow", "", "Spellbook disabled.")
+        elseif main == 'enable' or main == 'on' then
+          EnableAliasGroup("spellbook", true)
+          EnableTriggerGroup("spellbook", true)
+          ColourNote("yellow", "", "Spellbook enabled.")
+        elseif main == 'hide' then
+          local sp = args[2]
+          if not sp then
+            ColourNote("yellow", "", "Usage: spw hide &lt;spell id&gt;")
+            return
+          end
+          SpWinIgnore[sp] = true
+          SetVariable("SpWinIgnore", utils.serialize(SpWinIgnore))
+          ColourNote("yellow", "", "Spell " .. sp .. " hidden.")
+        elseif main == 'unhide' then
+          local sp = args[2]
+          if not sp then
+            ColourNote("yellow", "", "Usage: spw unhide &lt;spell id&gt;")
+            return
+          end
+          SpWinIgnore[sp] = nil
+          SetVariable("SpWinIgnore", utils.serialize(SpWinIgnore))
+          ColourNote("yellow", "", "Spell " .. sp .. " unhidden.")
+        elseif main == 'hidden' then
+          local hidden = ""
+          for sp, _ in pairs(SpWinIgnore) do
+            hidden = hidden .. sp .. ", "
+          end
+          if hidden == "" then
+            hidden = "None"
+          else
+            hidden = hidden:sub(1, -3)
+          end
+          ColourNote("yellow", "", "Hidden spells: " .. hidden)
+        elseif main == 'help' then
+          ColourNote("cyan", "", "Spellbook window commands")
+          ColourNote("cyan", "", "------")
+          ColourNote("cyan", "", "spw enable                  - Enable spellbook")
+          ColourNote("cyan", "", "spw disable                 - Disable spellbook")
+          ColourNote("cyan", "", "spw hide &lt;spell id&gt;         - Hide spell from spellbook")
+          ColourNote("cyan", "", "spw unhide &lt;spell id&gt;       - Unhide spell from spellbook")
+          ColourNote("cyan", "", "spw hidden                  - List hidden spells")
+        end
     </send>
   </alias>
 </aliases>
