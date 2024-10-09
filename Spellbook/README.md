@@ -8,8 +8,9 @@ Example:
 
 ## Installation
 
-1. Download [Spellbook.xml](Spellbook.xml)
-1. Open Plugin Manager (Ctrl+Alt+P)
+1. Download [Spellbook.xml](Spellbook.xml), place it somewhere it wouldn't move (e.g. the plugins
+   directory in your MUSHClient installation)
+1. Open Plugin Manager (Ctrl+Shift+P)
 1. Add `Spellbook.xml` via the plugin manager
 
 ## Usage
