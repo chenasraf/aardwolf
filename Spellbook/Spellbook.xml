@@ -16,14 +16,15 @@
    save_state="y"
    date_written="2024-10-08 00:56:30"
    requires="5.07"
-   version="1.2"
+   version="1.30"
    >
 </plugin>
 
 <!--  Triggers  -->
 
-<script>
-<![CDATA[
+<script><![CDATA[
+-- utils
+
 string.lpad = function(str, len, char)
   if char == nil then char = ' ' end
   return string.rep(char, len - #str) .. str
@@ -49,6 +50,8 @@ utils.serialize = function (t)
   return s .. "}"
 end
 
+-- funcs
+
 function CastSpell(_flags, hotspot_id)
   local spid = tonumber(hotspot_id:match("spell_(%d+)"))
   local sp = nil
@@ -63,8 +66,17 @@ function CastSpell(_flags, hotspot_id)
   end
 end
 
+-- data
+
 SpWinData = {}
 SpWinIgnore = {}
+
+if GetVariable("SpWinPrac") == nil then
+  SetVariable("SpWinPrac", "full")
+end
+
+-- hooks
+
 function OnPluginInstall()
   local ignore = GetVariable("SpWinIgnore")
   if ignore then
@@ -74,8 +86,7 @@ function OnPluginInstall()
     end
   end
 end
-]]>
-</script>
+]]></script>
 
 <triggers>
   <trigger
@@ -95,20 +106,20 @@ end
    send_to="12"
    sequence="100"
   >
-    <send>
-      local name = "%1"
-      local mana = "%2"
-      local learned = "%3"
-      local spn = "%4"
+    <send><![CDATA[
+local name = "%1"
+local mana = "%2"
+local learned = "%3"
+local spn = "%4"
 
-      table.insert(SpWinData, {
-        level = spWinLv,
-        name = name,
-        mana = mana,
-        learned = learned,
-        id = spn
-      })
-    </send>
+table.insert(SpWinData, {
+  level = spWinLv,
+  name = name,
+  mana = mana,
+  learned = learned,
+  id = spn
+})
+]]></send>
   </trigger>
   <trigger
    group="spellbook"
@@ -118,21 +129,21 @@ end
    send_to="12"
    sequence="100"
   >
-    <send>
-      spWinLv = %1
-      local name = "%2"
-      local mana = "%3"
-      local learned = "%4"
-      local spn = "%5"
+    <send><![CDATA[
+spWinLv = %1
+local name = "%2"
+local mana = "%3"
+local learned = "%4"
+local spn = "%5"
 
-      table.insert(SpWinData, {
-        level = spWinLv,
-        name = name,
-        mana = mana,
-        learned = learned,
-        id = spn
-      })
-    </send>
+table.insert(SpWinData, {
+  level = spWinLv,
+  name = name,
+  mana = mana,
+  learned = learned,
+  id = spn
+})
+]]></send>
   </trigger>
   <trigger
    enabled="y"
@@ -149,37 +160,55 @@ end
    send_to="12"
    sequence="100"
   >
-    <send>
-      require "themed_miniwindows"
+    <send><![CDATA[
+require "themed_miniwindows"
 
-      local lv = 0
-      for i, sp in ipairs(SpWinData) do
-        local line = ""
-        if not SpWinIgnore[sp.id] then
-          if sp.level &gt; lv then
-            line = line .. "@W" .. string.rpad("lv " .. sp.level, 7)
-            lv = sp.level
-          else
-            line = line .. string.rpad("", 8)
-          end
-          line = line .. "@M[@G" .. string.lpad(sp.id, 3) .. "@M] "
-          line = line .. "@C" .. string.rpad(sp.name, 30)
-          line = line .. "@Y" .. string.lpad(sp.learned .. "%", 4)
-          -- spWin:add_text(line)
-          local tooltip = "Cast spell: " .. sp.name
-          spWin:add_text(
-            line,
-            true,
-            {
-              { label = tooltip, start = 1, stop = #line, text = "Send('cast " .. sp.id .. "')" }
-            }
-          )
-        end
-      end
+local function practice(sp)
+  if GetVariable("SpWinPrac") == "one" then
+    return "Send('practice " .. sp.id .. "')"
+  else
+    return "Send('practice " .. sp.id .. " full')"
+  end
+end
 
-      ColourNote("yellow", "", "Output captured to window.")
-      EnableTriggerGroup("spellbook", false)
-    </send>
+local lv = 0
+for i, sp in ipairs(SpWinData) do
+  local line = ""
+  if not SpWinIgnore[sp.id] then
+    local hLen = 9
+    local lvlLen = 3
+    local nameLen = 30
+    local learnedLen = 4
+
+    if sp.level > lv then
+      line = line .. "@W" .. string.rpad("lv " .. sp.level, 7)
+      lv = sp.level
+      hLen = 8
+    else
+      line = line .. string.rpad("", 8)
+    end
+
+    line = line .. "@M[@G" .. string.lpad(sp.id, lvlLen) .. "@M] "
+    line = line .. "@C" .. string.rpad(sp.name, nameLen)
+    line = line .. "@Y" .. string.lpad(sp.learned .. "%", learnedLen)
+
+    local tooltip = "Cast spell: " .. sp.name
+    local spNameStart = hLen + 1 + lvlLen + 1
+    local spNameEnd = spNameStart + #sp.name
+    spWin:add_text(
+      line,
+      true,
+      {
+        { label = tooltip, start = 1, stop = spNameEnd, text = "Send('cast " .. sp.id .. "')" },
+        { label = "Practice spell: " .. sp.name, start = spNameStart + nameLen, stop = #line, text = practice(sp) },
+      }
+    )
+  end
+end
+
+ColourNote("yellow", "", "Output captured to window.")
+EnableTriggerGroup("spellbook", false)
+]]></send>
   </trigger>
   <trigger
    group="spellbook"
@@ -212,15 +241,15 @@ end
    send_to="12"
    sequence="100"
   >
-    <send>
-      require "themed_miniwindows"
+    <send><![CDATA[
+require "themed_miniwindows"
 
-      spWin = ThemedTextWindow("spWin", 200, 200, 600, 500, "Spellbook", "center", true, true, true)
+spWin = ThemedTextWindow("spWin", 200, 200, 600, 500, "Spellbook", "center", true, true, true)
 
-      EnableTriggerGroup("spellbook")
-      SpWinData = {}
-      Send("spells%2")
-    </send>
+EnableTriggerGroup("spellbook")
+SpWinData = {}
+Send("spells%2")
+]]></send>
   </alias>
   <alias
    match="^spw (.+)?$"
@@ -230,69 +259,77 @@ end
    send_to="12"
    sequence="100"
   >
-    <send>
-        local args = utils.split("%1", " ")
-        local main = args[1]
+    <send><![CDATA[
+local args = utils.split("%1", " ")
+local main = args[1]
 
-        if main == 'disable' or main == 'off' then
-          spWin:hide()
-          EnableAliasGroup("spellbook", false)
-          EnableTriggerGroup("spellbook", false)
-          ColourNote("yellow", "", "Spellbook disabled.")
-        elseif main == 'enable' or main == 'on' then
-          EnableAliasGroup("spellbook", true)
-          EnableTriggerGroup("spellbook", true)
-          ColourNote("yellow", "", "Spellbook enabled.")
-        elseif main == 'hide' then
-          local sp = args[2]
-          if not sp then
-            ColourNote("yellow", "", "Usage: spw hide &lt;spell id&gt;")
-            return
-          end
-          SpWinIgnore[sp] = true
-          SetVariable("SpWinIgnore", utils.serialize(SpWinIgnore))
-          ColourNote("yellow", "", "Spell " .. sp .. " hidden.")
-        elseif main == 'unhide' then
-          local sp = args[2]
-          if not sp then
-            ColourNote("yellow", "", "Usage: spw unhide &lt;spell id&gt;")
-            return
-          end
-          SpWinIgnore[sp] = nil
-          SetVariable("SpWinIgnore", utils.serialize(SpWinIgnore))
-          ColourNote("yellow", "", "Spell " .. sp .. " unhidden.")
-        elseif main == 'hidden' then
-          local hidden = ""
-          for sp, _ in pairs(SpWinIgnore) do
-            hidden = hidden .. sp .. ", "
-          end
-          if hidden == "" then
-            hidden = "None"
-          else
-            hidden = hidden:sub(1, -3)
-          end
-          ColourNote("yellow", "", "Hidden spells: " .. hidden)
-        elseif main == 'help' then
-          ColourNote("cyan", "", "Spellbook window commands")
-          ColourNote("cyan", "", "------")
-          ColourNote("cyan", "", "spw enable                  - Enable spellbook")
-          ColourNote("cyan", "", "spw disable                 - Disable spellbook")
-          ColourNote("cyan", "", "spw hide &lt;spell id&gt;         - Hide spell from spellbook")
-          ColourNote("cyan", "", "spw unhide &lt;spell id&gt;       - Unhide spell from spellbook")
-          ColourNote("cyan", "", "spw hidden                  - List hidden spells")
-        end
-    </send>
+local function showHelp()
+  ColourNote("cyan", "", "Spellbook window commands")
+  ColourNote("cyan", "", "----------------------------------------------------------------")
+  ColourNote("cyan", "", "spw enable               - Enable spellbook")
+  ColourNote("cyan", "", "spw disable              - Disable spellbook")
+  ColourNote("cyan", "", "spw hide <spell id>      - Hide spell from spellbook")
+  ColourNote("cyan", "", "spw unhide <spell id>    - Unhide spell from spellbook")
+  ColourNote("cyan", "", "spw hidden               - List hidden spells")
+  ColourNote("cyan", "", "spw prac                 - Display practice % mode")
+  ColourNote("cyan", "", "spw prac one             - Practice spell % once per click")
+  ColourNote("cyan", "", "spw prac full            - Practice spell % to full on click")
+end
+
+if main == 'disable' or main == 'off' then
+  spWin:hide()
+  EnableAliasGroup("spellbook", false)
+  EnableTriggerGroup("spellbook", false)
+  ColourNote("yellow", "", "Spellbook disabled.")
+elseif main == 'enable' or main == 'on' then
+  EnableAliasGroup("spellbook", true)
+  EnableTriggerGroup("spellbook", true)
+  ColourNote("yellow", "", "Spellbook enabled.")
+elseif main == 'hide' then
+  local sp = args[2]
+  if not sp then
+    ColourNote("yellow", "", "Usage: spw hide <spell id>")
+    return
+  end
+  SpWinIgnore[sp] = true
+  SetVariable("SpWinIgnore", utils.serialize(SpWinIgnore))
+  ColourNote("yellow", "", "Spell " .. sp .. " hidden.")
+elseif main == 'unhide' then
+  local sp = args[2]
+  if not sp then
+    ColourNote("yellow", "", "Usage: spw unhide <spell id>")
+    return
+  end
+  SpWinIgnore[sp] = nil
+  SetVariable("SpWinIgnore", utils.serialize(SpWinIgnore))
+  ColourNote("yellow", "", "Spell " .. sp .. " unhidden.")
+elseif main == 'hidden' then
+  local hidden = ""
+  for sp, _ in pairs(SpWinIgnore) do
+    hidden = hidden .. sp .. ", "
+  end
+  if hidden == "" then
+    hidden = "None"
+  else
+    hidden = hidden:sub(1, -3)
+  end
+  ColourNote("yellow", "", "Hidden spells: " .. hidden)
+elseif main == 'prac' then
+  local mode = args[2]
+  if mode == 'one' then
+    SetVariable("SpWinPrac", "one")
+    ColourNote("yellow", "", "Practice mode set to 'one'.")
+  elseif mode == 'full' then
+    SetVariable("SpWinPrac", "full")
+    ColourNote("yellow", "", "Practice mode set to 'full'.")
+  else
+    ColourNote("yellow", "", "Practice mode is currently set to " .. GetVariable("SpWinPrac") .. ".")
+  end
+elseif main == 'help' then
+  showHelp()
+end
+]]></send>
   </alias>
 </aliases>
-
-<!--  Timers  -->
-
-<timers>
-  <timer enabled="y" minute="10" second="0.00" offset_second="0.00"    send_to="12"
-group="keepawake" >
-  <send>Send("")</send>
-
-  </timer>
-</timers>
 
 </muclient>
