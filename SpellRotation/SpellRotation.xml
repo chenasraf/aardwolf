@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-11-02 02:37:52"
    requires="5.07"
-   version="1.01"
+   version="1.02"
    >
 
 </plugin>
@@ -192,7 +192,7 @@ end
   <send>Rot:actDefault("%1")</send>
   </alias>
   <alias
-   match="ks (.+)"
+   match="^ks (.+)$"
    enabled="y"
    regexp="y"
    group="cmd"
