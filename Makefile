@@ -10,3 +10,13 @@ install/spellbook:
 watch/spellbook:
 	@echo "Watching for changes in Spellbook..."
 	@fswatch -o "./Spellbook/Spellbook.xml" | xargs -n1 -I{} make install/spellbook
+
+.PHONY: install/spellrotation
+install/spellrotation:
+	cp "./SpellRotation/SpellRotation.xml" "$(PLUGDIR)"
+	@echo "SpellRotation installed."
+
+.PHONY: watch/spellrotation
+watch/spellrotation:
+	@echo "Watching for changes in SpellRotation..."
+	@fswatch -o "./SpellRotation/SpellRotation.xml" | xargs -n1 -I{} make install/spellrotation
