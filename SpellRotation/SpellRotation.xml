@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-11-02 02:37:52"
    requires="5.07"
-   version="1.0"
+   version="1.01"
    >
 
 </plugin>
@@ -100,7 +100,7 @@ function Rot:act(name, tgt)
   if tgt == "-" then
     tgt = ""
   end
-  if string.match(tgt, " ") then
+  if string.match(tgt, " ") and not self.snd then
     tgt = "'" .. tgt .. "'"
   end
   local cmds = self:get(name)
@@ -228,7 +228,7 @@ end
 <!--  Variables  -->
 
 <variables>
-    <variable name="rotData">{ main = { "attack" } }</variable>
+    <!-- <variable name="rotData">{ main = { "attack" } }</variable> -->
 </variables>
 
 </muclient>
