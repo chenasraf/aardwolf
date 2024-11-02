@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-11-02 02:37:52"
    requires="5.07"
-   version="1.02"
+   version="1.03"
    >
 
 </plugin>
@@ -138,6 +138,16 @@ function Rot:parse(val)
     self:switch(value)
   elseif act == "list" then
     self:list()
+  elseif act == "snd" then
+    if value == "on" then
+      self.snd = true
+      logger.Cyan("SnD features enabled")
+    elseif value == "off" then
+      self.snd = false
+      logger.Cyan("SnD features disabled")
+    else
+      logger.Cyan("SnD features are " .. (self.snd and "enabled" or "disabled"))
+    end
   elseif act == "help" or act == "h" then
     self:help()
   else
@@ -164,12 +174,17 @@ function Rot:help()
   logger.Cyan("--------------------------------------------------------------")
   logger.Cyan("kp [target]           Execute current rotation")
   logger.Cyan("kp [name]             Switch to rotation [name] and execute")
+  logger.Cyan("ks set <name> <cmds>  Set rotation")
   logger.Cyan("ks get <name>         Get rotation")
-  logger.Cyan("ks <name> <cmds>      Set rotation")
   logger.Cyan("ks switch <name>      Switch to rotation")
   logger.Cyan("ks list               List all rotations and their commands")
+  logger.Cyan("ks snd <on|off>       Sets SnD features on/off.")
+  logger.Cyan("ks snd                View SnD features state.")
   -- logger.Cyan("kkp                   Execute rotation on SnD target, and")
   -- logger.Cyan("                      fill Command input with main rotation")
+  logger.Cyan("--------------------------------------------------------------")
+  logger.Cyan("Plugin author: KumoGami")
+  logger.Cyan("Source: https://github.com/chenasraf/aardwolf/tree/master/SpellRotation")
 end
 
 function OnPluginInstall()
