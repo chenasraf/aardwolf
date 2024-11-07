@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "aardwolf-mapgen"
+version = "0.1.0"
+description = ""
+authors = ["Chen Asraf <casraf@pm.me>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+networkx = "^3.4.2"
+matplotlib = "^3.9.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
