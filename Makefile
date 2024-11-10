@@ -1,6 +1,11 @@
 MUSHDIR=$(HOME)/Library/Application Support/CrossOver/Bottles/MushClient/drive_c/users/crossover/MUSHclient
 PLUGDIR=$(MUSHDIR)/worlds/plugins
 
+.PHONY: copydb
+copydb:
+	cp "$(MUSHDIR)/Aardwolf.db" "MapGenerator/Aardwolf.db"
+	@echo "Aardwolf.db copied to MapGenerator."
+
 .PHONY: install/spellbook
 install/spellbook:
 	cp "./Spellbook/Spellbook.xml" "$(PLUGDIR)"

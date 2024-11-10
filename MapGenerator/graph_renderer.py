@@ -33,8 +33,10 @@ class GraphRenderer:
         # Draw rectangular nodes
         ax = plt.gca()
         for node, (x, y) in pos.items():
+            room = next((r for r in self.rooms if r.uid == node), None)
+            color = 'lightblue' if not room.data.get('outside', False) else 'lightcoral'
             rect = Rectangle((x - rect_width / 2, y - rect_height / 2), rect_width, rect_height,
-                             facecolor="skyblue", edgecolor="black")
+                             facecolor=color, edgecolor="black")
             ax.add_patch(rect)
             label = labels.get(node, node)
             ax.text(x, y, label, verticalalignment='center', horizontalalignment='center', fontsize=10)

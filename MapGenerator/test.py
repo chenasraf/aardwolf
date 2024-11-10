@@ -1,5 +1,6 @@
 from parser import MapParser
-from graph_generator import GraphGenerator
+from position_calculator import PositionCalculator
+from graph_renderer import GraphRenderer
 import os
 import json
 
@@ -24,7 +25,13 @@ if __name__ == "__main__":
                 )
             )
             print(f"Saved {cache_file}")
-        gr = GraphGenerator(rooms, exits)
-        gr.generate_graph()
-        gr.draw_graph()
+
+        calculator = PositionCalculator(rooms, exits)
+        calculator.assign_positions()
+        calculator.ensure_no_collisions()
+        positions = calculator.get_positions()
+
+        renderer = GraphRenderer(rooms, exits, positions)
+        renderer.generate_graph()
+        renderer.draw_graph()
 
